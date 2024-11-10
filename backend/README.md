@@ -1,0 +1,31 @@
+**Initial Setup**
+
+1. From the root directory, navigate to the platform directory in your terminal
+   / > `cd backend/platform` > /backend/platform
+
+2. Install platform dependencies
+   `poetry install`
+
+3. Build the project
+   `docker compose build`
+
+4. Run the project
+   `docker compose up -d`
+
+5. Run DB migrations
+   `docker compose exec platform alembic upgrade head`
+
+6. Restart the project to reflect DB migrations
+   `docker compose down && docker compose up -d`
+
+**Stack Overview**
+
+- Python
+- FastAPI
+
+- PostgreSQL
+- SQLAlchemy
+- Alembic
+
+- Docker compose
+- Poetry
