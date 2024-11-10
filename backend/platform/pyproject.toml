@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "platform"
+version = "0.1.0"
+description = ""
+authors = ["Andy Jung <wontaethedev@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
+pydantic = {extras = ["email"], version = "^2.9.2"}
+python-dotenv = "^1.0.1"
+fastapi = "^0.115.4"
+sqlalchemy = "^2.0.36"
+asyncpg = "^0.30.0"
+alembic = "^1.14.0"
+uvicorn = "^0.32.0"
+greenlet = "^3.1.1"
+psycopg2-binary = "^2.9.10"
+ulid-py = "^1.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
