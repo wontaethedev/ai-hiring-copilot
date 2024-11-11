@@ -19,8 +19,6 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False, 
 )
 
-Base = declarative_base()
-
 async def get_db():
     async with AsyncSessionLocal() as db:
         yield db
