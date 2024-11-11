@@ -49,7 +49,7 @@ class ResumeDBHelper:
     base_requirement_satisfaction_score: int,
     exceptional_considerations: str,
     fitness_score: int,
-  ):
+  ) -> None:
     """
     Update resume details in the DB.
     TODO: Helper function should be more robust instead of for specific use-case.
@@ -67,7 +67,7 @@ class ResumeDBHelper:
     session: AsyncSession,
     id: str,
     status: StatusTypes,
-  ):
+  ) -> None:
     """
     Updates the status of a resume detail in the DB.
     """
@@ -76,3 +76,19 @@ class ResumeDBHelper:
     )
     await session.execute(stmt)
     await session.commit()
+  
+  async def bulk_update_status(
+    session: AsyncSession,
+    ids: list[str],
+    status: StatusTypes,
+  ) -> None:
+    """
+    Updates the status of resume details in bulk.
+    """
+    stmt = (
+      update(Resume)
+      .where(Resume.id.in_(ids))
+      .values(status=status)
+    )
+    await session.execute(stmt)
+    await session.commit() 

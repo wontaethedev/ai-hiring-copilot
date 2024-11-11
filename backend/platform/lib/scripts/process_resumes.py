@@ -32,6 +32,19 @@ async def process_resumes(
       max_num_resumes=5,
     )
 
+    resume_ids: list[str] = [resume.id for resume in resumes]
+
+    try:
+      await ResumeDBHelper.bulk_update_status(
+        session=session,
+        ids=resume_ids,
+        status=StatusTypes.IN_PROGRESS
+      )
+    except Exception as e:
+      await ResumeDBHelper.bulk_update_status(session=session, ids=resume_ids, status=StatusTypes.FAILED)
+      raise Exception(f"Failed to set target resumes in status IN_PROGRESS | {str(e)}")
+
+
     for resume in resumes:
       resume_id: str = resume.id
       resume_content: str = resume.content
