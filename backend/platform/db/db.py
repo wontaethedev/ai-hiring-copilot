@@ -1,6 +1,9 @@
 import os
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
+
+from contextlib import asynccontextmanager
 
 user = os.getenv("POSTGRES_USER", "user")
 password = os.getenv("POSTGRES_PASSWORD", "password")
@@ -20,5 +23,10 @@ AsyncSessionLocal = sessionmaker(
 )
 
 async def get_db():
+    async with AsyncSessionLocal() as db:
+        yield db
+
+@asynccontextmanager
+async def get_context_managed_session():
     async with AsyncSessionLocal() as db:
         yield db
