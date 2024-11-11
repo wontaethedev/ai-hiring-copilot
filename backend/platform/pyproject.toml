@@ -20,6 +20,7 @@ psycopg2-binary = "^2.9.10"
 ulid-py = "^1.1.0"
 pdfminer-six = "^20240706"
 python-multipart = "^0.0.17"
+openai = "^1.54.3"
 
 
 [build-system]

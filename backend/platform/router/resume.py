@@ -19,9 +19,9 @@ from lib.helpers.pdf import (
    extract_text_from_pdf
 )
 from lib.helpers.db.resume import ResumeDBHelper
+from lib.scripts.process_resumes import process_resumes
 
 from db.db import get_db
-from db.models import Resume
 
 
 router = APIRouter()
@@ -79,3 +79,9 @@ async def register(
       logging.error(f"Failed to parse ID from DB inserted resume | {str(e)}")
 
   return RegisterResponse(ids=processed_resume_ids)
+
+
+@router.post("/process")
+async def process():
+  result = await process_resumes()
+  return result
