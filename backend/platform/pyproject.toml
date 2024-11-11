@@ -18,6 +18,8 @@ uvicorn = "^0.32.0"
 greenlet = "^3.1.1"
 psycopg2-binary = "^2.9.10"
 ulid-py = "^1.1.0"
+pdfminer-six = "^20240706"
+python-multipart = "^0.0.17"
 
 
 [build-system]
