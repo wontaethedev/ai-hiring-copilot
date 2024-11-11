@@ -27,4 +27,4 @@ class Resume(Base):
   base_requirement_satisfaction_score: int | None = Column(Integer)
   exceptional_considerations: str | None = Column(String)
   fitness_score: int | None = Column(Integer)
-  # Add created_at
+  # TODO: Add created_at

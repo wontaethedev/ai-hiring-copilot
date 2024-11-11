@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from lib.models.product.resume import RoleTypes, StatusTypes
 from lib.models.resume import (
   RegisterResponse,
+  ResumeDetails,
 )
 from lib.helpers.pdf import (
    extract_text_from_pdf
@@ -22,6 +23,7 @@ from lib.helpers.db.resume import ResumeDBHelper
 from lib.scripts.process_resumes import process_resumes
 
 from db.db import get_db
+from db.models import Resume
 
 
 router = APIRouter()
@@ -84,4 +86,57 @@ async def register(
 @router.post("/process")
 async def process():
   result = await process_resumes()
+  return result
+
+
+@router.get("/")
+async def list_resumes(
+  db: AsyncSession = Depends(get_db),
+) -> list[ResumeDetails]:
+  result: list[ResumeDetails] = []
+
+  try:
+    # Fetch processed resumes from the DB
+    processed_resumes: list[Resume] = await ResumeDBHelper.select_by_filters(
+      session=db,
+      status=StatusTypes.COMPLETE,
+      max_num_resumes=100,
+    )
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Failed to fetch processed resumes from DB | {str(e)}")
+
+  try:
+    # Loop over each resume, parse & validate details
+    for resume in processed_resumes:
+      try:
+        # Parse resume details
+        resume_id: str =  resume.id
+        resume_base_requirement_satisfaction_score: int | None = resume.base_requirement_satisfaction_score
+        resume_exceptional_considerations: str | None = resume.exceptional_considerations
+        resume_fitness_score: int | None = resume.fitness_score
+
+        # Validate resume details
+        if (
+          resume_base_requirement_satisfaction_score is None
+          or resume_exceptional_considerations is None
+          or resume_fitness_score is None
+        ):
+          raise Exception("Resume does not have necessary assessment details")
+
+        # Resume has necessary details, append to result
+        result.append(
+          ResumeDetails(
+            id=resume_id,
+            base_requirement_satisfaction_score=resume_base_requirement_satisfaction_score,
+            exceptional_considerations=resume_exceptional_considerations,
+            fitness_score=resume_fitness_score,
+          )
+        )
+      except Exception as e:
+        # Do nothing, move on to next resume
+        logging.error(f"Failed to parse resume details | {str(e)}")
+  except Exception as e:
+    # Should not happen
+    raise HTTPException(status_code=500, detail=f"Failed to prepare processed resumes | {str(e)}")
+
   return result
