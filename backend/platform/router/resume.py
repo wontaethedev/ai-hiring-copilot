@@ -15,6 +15,7 @@ from lib.models.product.resume import RoleTypes, StatusTypes
 from lib.models.resume import (
   RegisterResponse,
   ResumeDetails,
+  ListClassifiedResponse,
 )
 from lib.helpers.pdf import (
    extract_text_from_pdf
@@ -89,11 +90,13 @@ async def process():
   return result
 
 
-@router.get("/")
-async def list_resumes(
+@router.get("/list_classified")
+async def list_classified(
   db: AsyncSession = Depends(get_db),
-) -> list[ResumeDetails]:
-  result: list[ResumeDetails] = []
+) -> ListClassifiedResponse:
+  very_fit_resumes: list[ResumeDetails] = []
+  fit_resumes: list[ResumeDetails] = []
+  not_fit_resumes: list[ResumeDetails] = []
 
   try:
     # Fetch processed resumes from the DB
@@ -123,15 +126,19 @@ async def list_resumes(
         ):
           raise Exception("Resume does not have necessary assessment details")
 
-        # Resume has necessary details, append to result
-        result.append(
-          ResumeDetails(
-            id=resume_id,
-            base_requirement_satisfaction_score=resume_base_requirement_satisfaction_score,
-            exceptional_considerations=resume_exceptional_considerations,
-            fitness_score=resume_fitness_score,
-          )
+        # Classify resume depending on fitness score
+        curr_resume: ResumeDetails = ResumeDetails(
+          id=resume_id,
+          base_requirement_satisfaction_score=resume_base_requirement_satisfaction_score,
+          exceptional_considerations=resume_exceptional_considerations,
+          fitness_score=resume_fitness_score,
         )
+        if resume_fitness_score >= 75:
+          very_fit_resumes.append(curr_resume)
+        elif resume_fitness_score >= 40:
+          fit_resumes.append(curr_resume)
+        else:
+          not_fit_resumes.append(curr_resume)
       except Exception as e:
         # Do nothing, move on to next resume
         logging.error(f"Failed to parse resume details | {str(e)}")
@@ -139,4 +146,8 @@ async def list_resumes(
     # Should not happen
     raise HTTPException(status_code=500, detail=f"Failed to prepare processed resumes | {str(e)}")
 
-  return result
+  return ListClassifiedResponse(
+    very_fit=very_fit_resumes,
+    fit=fit_resumes,
+    not_fit=not_fit_resumes,
+  )
