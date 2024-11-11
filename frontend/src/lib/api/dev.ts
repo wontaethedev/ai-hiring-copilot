@@ -1,6 +1,6 @@
 import { AxiosResponse } from "axios";
 
-import { HealthData } from "@/lib/models/home";
+import { HealthData } from "@/lib/models/dev";
 import { apiClient } from "@/lib/helpers/api";
 
 export const getHealth = async (): Promise<HealthData> => {
