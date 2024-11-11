@@ -1,6 +1,7 @@
 import os
 import logging
 import tempfile
+from pathlib import Path
 
 from fastapi import (
   APIRouter,
@@ -19,6 +20,9 @@ from lib.models.resume import (
 )
 from lib.helpers.pdf import (
    extract_text_from_pdf
+)
+from lib.helpers.worddoc import (
+  extract_text_from_word
 )
 from lib.helpers.db.resume import ResumeDBHelper
 from lib.scripts.process_resumes import process_resumes
@@ -39,8 +43,11 @@ async def register(
 
   # TODO: SECURITY - sanitization, file size check (unless enforced on nginx level), harmful content, etc.
   for file in files:
-    if file.content_type != "application/pdf":
-      raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    if file.content_type not in [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ]:
+      raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF of DOCX file.")
 
     try:
       # Read file
@@ -50,13 +57,20 @@ async def register(
 
     try:
       # Save the uploaded file to a temporary file
-      with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+      file_extension = Path(file.filename).suffix
+      with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
           tmp_file.write(contents)
           tmp_file_path = tmp_file.name
-      # Extract text from the PDF file
-      resume_text = extract_text_from_pdf(tmp_file_path)
+
+      # Extract text based on file type
+      if file.content_type == "application/pdf":
+        resume_text = extract_text_from_pdf(tmp_file_path)
+      elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        resume_text = extract_text_from_word(tmp_file_path)
+      else:
+        raise Exception("Failed to recognize content type of file.")
     except Exception as e:
-      raise HTTPException(status_code=500, detail=f"Failed to extract text from pdf | {str(e)}")
+      raise HTTPException(status_code=500, detail=f"Failed to extract text from provided file | {str(e)}")
     finally:
       # Delete the temporary file if it exists
       if tmp_file_path and os.path.exists(tmp_file_path):
