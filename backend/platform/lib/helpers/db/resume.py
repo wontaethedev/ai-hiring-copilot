@@ -12,6 +12,10 @@ class ResumeDBHelper:
     status: StatusTypes,
     max_num_resumes: int,
   ) -> list[Resume]:
+    """
+    Retrieves resume details by given filters from the DB.
+    """
+
     stmt = select(Resume).where(Resume.status == status).limit(max_num_resumes)
     result = await session.execute(stmt)
     resumes = result.scalars().all()
@@ -23,6 +27,10 @@ class ResumeDBHelper:
     status: StatusTypes,
     content: str,
   ) -> str:
+    """
+    Inserts resume details into the DB
+    """
+
     new_resume: Resume = Resume(
       role=role,
       status=status,
@@ -42,6 +50,11 @@ class ResumeDBHelper:
     exceptional_considerations: str,
     fitness_score: int,
   ):
+    """
+    Update resume details in the DB.
+    TODO: Helper function should be more robust instead of for specific use-case.
+    """
+
     stmt = update(Resume).where(Resume.id == id).values(
       base_requirement_satisfaction_score=base_requirement_satisfaction_score,
       exceptional_considerations=exceptional_considerations,
@@ -55,6 +68,9 @@ class ResumeDBHelper:
     id: str,
     status: StatusTypes,
   ):
+    """
+    Updates the status of a resume detail in the DB.
+    """
     stmt = update(Resume).where(Resume.id == id).values(
       status=status,
     )

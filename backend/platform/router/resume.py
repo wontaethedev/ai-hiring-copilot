@@ -39,6 +39,18 @@ async def register(
   files: list[UploadFile] = File(...),
   db: AsyncSession = Depends(get_db),
 ) -> RegisterResponse:
+  """
+  Registers resume files into the DB into PENDING mode, for the role SENIOR PRODUCT ENGINEER.
+  TODO: Make role dynamic
+
+  Registered resume files should be picked up by the script `lib/scripts/process_resumes.py` and processed.
+
+  Args:
+    - files: The resume files to register into the DB
+  Returns:
+    - RegisterResponse: The ids of the resumes uploaded to the DB
+  """
+
   processed_resume_ids: list[str] = []
 
   # TODO: SECURITY - sanitization, file size check (unless enforced on nginx level), harmful content, etc.
@@ -64,9 +76,9 @@ async def register(
 
       # Extract text based on file type
       if file.content_type == "application/pdf":
-        resume_text = extract_text_from_pdf(tmp_file_path)
+        resume_text: str = extract_text_from_pdf(tmp_file_path)
       elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        resume_text = extract_text_from_word(tmp_file_path)
+        resume_text: str = extract_text_from_word(tmp_file_path)
       else:
         raise Exception("Failed to recognize content type of file.")
     except Exception as e:
@@ -100,17 +112,44 @@ async def register(
 
 @router.post("/process")
 async def process() -> list[str]:
-    try:
-        result: list[str] = await process_resumes()
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+  """
+  Triggers the `process_resumes` script.
+  This endpoint is strictly for testing purposes, and should be disabled in staging/prod environments
+  TODO: Disable in development mode (ie: IS_DEV flag)
+
+  The `process_resumes` script processes 5 pending resumes using OpenAI
+
+  Returns:
+    - list[str]: The IDs of resumes that were processed using the `process_resumes` script
+  """
+
+  try:
+      result: list[str] = await process_resumes()
+      return result
+  except Exception as e:
+      raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/list_classified")
 async def list_classified(
   db: AsyncSession = Depends(get_db),
 ) -> ListClassifiedResponse:
+  """
+  Lists resumes processed by OpenAI in 3 classifications:
+    - very_fit: Fitness score >= 75, candidate is very fit for the role
+    - fit: 75 > Fitness score >= 40, candidate is fit for the role
+    - not_fit: 40 > Fitness score, candidate is not the most fit for the role
+
+  NOTE: Resumes processed by OpenAI are marked as status COMPLETE
+
+  Returns:
+    - ListClassifiedResponse: Resume details classified into the 3 classifications
+      - ResumeDetails contains the following information:
+        - base_requirement_satisfaction_score: How much the candidate satisfies the base requirements out of 100.
+        - exceptional_considerations: Any exceptional stand outs that may put the candidate for particular consideration.
+        - fitness_score: How fit the candidate is for the role out of 100.
+  """
+
   very_fit_resumes: list[ResumeDetails] = []
   fit_resumes: list[ResumeDetails] = []
   not_fit_resumes: list[ResumeDetails] = []

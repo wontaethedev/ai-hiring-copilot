@@ -18,6 +18,10 @@ class OpenAIHelper:
     system_msg: str,
     tools: list[dict[str]],
   ):
+    """
+    Sends a function call prompt to OpenAPI
+    """
+
     try:
       # Send function call prompt to OpenAPI
       response = self.client.chat.completions.create(

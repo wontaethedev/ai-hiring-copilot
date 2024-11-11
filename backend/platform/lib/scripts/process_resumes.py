@@ -10,9 +10,19 @@ from db.models import Resume
 async def process_resumes(
 ) -> list[str]:
   """
-  TODO: Add created_at in Resume model and process from oldest resume
-  TODO: Make max_num_resumes controllable
+  Processes resumes of status PENDING by using OpenAI for
+  assessment based on preset data in `platform/lib/data/openai.py`.
+
+  NOTE: Fill in `OPEN_AI_API_KEY` and `OPEN_AI_ORGANIZATION_ID` in the preset data file to use this script.
+    TODO: move to config or .env
+
+  TODO: Add `created_at` in `Resume` model and process from oldest resume
+  TODO: Make `max_num_resumes` controllable
+
+  Returns:
+    - list[str]: The IDs of resumes that were processed
   """
+
   processed_resume_ids: list[str] = []
 
   async with get_context_managed_session() as session:
