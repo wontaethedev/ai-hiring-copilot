@@ -99,9 +99,12 @@ async def register(
 
 
 @router.post("/process")
-async def process():
-  result = await process_resumes()
-  return result
+async def process() -> list[str]:
+    try:
+        result: list[str] = await process_resumes()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/list_classified")

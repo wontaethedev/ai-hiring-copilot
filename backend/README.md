@@ -20,6 +20,10 @@ Enter your `OPEN_AI_API_KEY` and `OPEN_AI_ORGANIZATION_ID` in `/backend/platform
 6. Restart the project to reflect DB migrations
    `docker compose down && docker compose up -d`
 
+**Additional Commands**
+
+- `poetry run pytest` to run tests > May need to specify root path ie: `PYTHONPATH=. poetry run pytest`
+
 **Stack Overview**
 
 - Python
