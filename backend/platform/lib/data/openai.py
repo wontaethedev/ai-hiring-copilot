@@ -1,7 +1,7 @@
 from lib.models.product.resume import RoleTypes
 
-OPEN_AI_API_KEY: str = ''
-OPEN_AI_ORGANIZATION_ID: str = ''
+OPEN_AI_API_KEY: str = '' # TODO: Move to config or .env
+OPEN_AI_ORGANIZATION_ID: str = '' # TODO: Move to config or .env
 
 TOOLS: dict[RoleTypes] = {
   RoleTypes.SENIOR_PRODUCT_ENGINEER: {
@@ -20,7 +20,7 @@ TOOLS: dict[RoleTypes] = {
         "properties": {
           "base_requirement_satisfaction_score": {
             "type": "integer",
-            "description": "An integer representing how well the candidate meets, with respect to the provided job description."
+            "description": "An integer representing how well the candidate meets, with respect to the provided job description. This score must be out of 100"
           },
           "exceptionals": {
             "type": "string",
@@ -28,7 +28,7 @@ TOOLS: dict[RoleTypes] = {
           },
           "fitness_score": {
             "type": "integer",
-            "description": "An integer representing the overall fitness score of the candidate for role, with respect to the provided job description."
+            "description": "An integer representing the overall fitness score of the candidate for role, with respect to the provided job description. This score must be out of 100"
           },
         },
         "required": ["base_requirement_satisfaction_score", "exceptionals", "fitness_score"],
