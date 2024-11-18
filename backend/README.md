@@ -1,23 +1,23 @@
 **Initial Setup**
 
-Enter your `OPEN_AI_API_KEY` and `OPEN_AI_ORGANIZATION_ID` in `/backend/platform/lib/data/openai.py`
+1. Create a .env file in `/backend` and populate fields `OPEN_AI_API_KEY` and `OPEN_AI_ORGANIZATION_ID`
 
-1. From the root directory, navigate to the platform directory in your terminal
+2. From the root directory, navigate to the platform directory in your terminal
    / > `cd backend/platform` > /backend/platform
 
-2. Install platform dependencies
+3. Install platform dependencies
    `poetry install`
 
-3. Build the project
+4. Build the project
    `docker compose build`
 
-4. Run the project
+5. Run the project
    `docker compose up -d`
 
-5. Run DB migrations
+6. Run DB migrations
    `docker compose exec platform alembic upgrade head`
 
-6. Restart the project to reflect DB migrations
+7. Restart the project to reflect DB migrations (unless you ran migrations in the container directly)
    `docker compose down && docker compose up -d`
 
 **Additional Commands**

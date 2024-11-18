@@ -1,7 +1,5 @@
 from lib.models.product.resume import RoleTypes
 
-OPEN_AI_API_KEY: str = '' # TODO: Move to config or .env
-OPEN_AI_ORGANIZATION_ID: str = '' # TODO: Move to config or .env
 
 TOOLS: dict[RoleTypes] = {
   RoleTypes.SENIOR_PRODUCT_ENGINEER: {

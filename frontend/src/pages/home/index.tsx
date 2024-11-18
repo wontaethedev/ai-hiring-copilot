@@ -67,6 +67,7 @@ const HomePage: React.FC = () => {
       setError(null);
 
       if (!role) {
+        setIsResumesLoading(false);
         return;
       }
 
@@ -100,6 +101,7 @@ const HomePage: React.FC = () => {
     setError(null);
 
     if (!role) {
+      setError("Please create a role");
       return;
     }
 
@@ -140,9 +142,7 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (role) {
-      fetchResumes();
-    }
+    fetchResumes();
   }, [role, fetchResumes]);
 
   const sideBarItems = (): React.ReactNode => (
@@ -172,7 +172,7 @@ const HomePage: React.FC = () => {
 
   const errorContent = (): React.ReactNode => (
     <>
-      <p>Error: {error}</p>
+      <p className="error-msg">Error: {error}</p>
     </>
   );
 
@@ -210,7 +210,7 @@ const HomePage: React.FC = () => {
       <div className="c-content">
         <div className="role-selector">
           <div className="current-role" onClick={() => toggleRoleOptions()}>
-            {role?.name || "DEFAULT"}{" "}
+            {role?.name || "Select a role"}{" "}
             <FontAwesomeIcon
               className="toggle-options-icon"
               icon={
