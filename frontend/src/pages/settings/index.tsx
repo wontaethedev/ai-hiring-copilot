@@ -29,6 +29,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // TODO: Refactor
   const fetchRole = async () => {
     try {
       setIsRoleLoading(true);
@@ -69,25 +70,14 @@ const SettingsPage: React.FC = () => {
     fetchRole();
   }, []);
 
-  const sideBarItems = (): React.ReactNode => (
-    <>
-      <div className="title">Settings</div>
-      <div className="header">Roles</div>
-    </>
-  );
-
-  const loadingContent = (): React.ReactNode => (
-    <>
-      <p className="system-msg">Loading...</p>
-    </>
-  );
-
+  // TODO: Refactor
   const errorContent = (): React.ReactNode => (
     <>
       <p>Error: {error}</p>
     </>
   );
 
+  // TODO: Refactor
   const content = (): React.ReactNode => (
     <>
       {roles.length > 0 ? (
@@ -165,5 +155,18 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 };
+
+const loadingContent = (): React.ReactNode => (
+  <>
+    <p className="system-msg">Loading...</p>
+  </>
+);
+
+const sideBarItems = (): React.ReactNode => (
+  <>
+    <div className="title">Settings</div>
+    <div className="header">Roles</div>
+  </>
+);
 
 export default SettingsPage;

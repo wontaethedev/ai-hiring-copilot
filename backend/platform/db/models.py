@@ -35,4 +35,6 @@ class Role(Base):
   __tablename__ = 'role'
 
   id: str = Column(String, primary_key=True, default=generate_ulid)
+  name: str = Column(String, nullable=False) # TODO: User input - sanitization, length limit, etc.
   description: str = Column(Text, nullable=False) # TODO: User input - sanitization, length limit, etc.
+  

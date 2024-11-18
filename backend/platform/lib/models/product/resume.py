@@ -1,4 +1,10 @@
-from enum import StrEnum
+from enum import StrEnum, Enum
+
+
+class ClassifierTypes(Enum):
+  VERY_FIT = "very_fit"
+  FIT = "fit"
+  UNFIT = "unfit"
 
 
 class StatusTypes(StrEnum):

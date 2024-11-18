@@ -1,7 +1,7 @@
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lib.models.product.resume import StatusTypes
+from lib.models.product.resume import StatusTypes, ClassifierTypes
 
 from db.models import Resume
 
@@ -9,14 +9,32 @@ from db.models import Resume
 class ResumeDBHelper:
   async def select_by_filters(
     session: AsyncSession,
-    status: StatusTypes,
-    max_num_resumes: int,
+    role_id: str,
+    status: StatusTypes = None,
+    classifier: ClassifierTypes = None,
   ) -> list[Resume]:
     """
     Retrieves resume details by given filters from the DB.
     """
 
-    stmt = select(Resume).where(Resume.status == status).limit(max_num_resumes)
+    stmt = select(Resume).where(Resume.role_id == role_id)
+
+    if status:
+      stmt.where(Resume.status == status)
+    
+    if classifier:
+      if classifier == ClassifierTypes.VERY_FIT:
+        stmt.where(Resume.fitness_score >= 85)
+      elif classifier == ClassifierTypes.FIT:
+        stmt = stmt.where(Resume.fitness_score < 85)
+        stmt = stmt.where(Resume.fitness_score >= 50)
+      elif classifier == ClassifierTypes.UNFIT:
+        stmt = stmt.where(Resume.fitness_score < 50)
+      else:
+        # Should not happen
+        # TODO: Raise exception
+        pass
+
     result = await session.execute(stmt)
     resumes = result.scalars().all()
     return resumes
@@ -92,4 +110,3 @@ class ResumeDBHelper:
     )
     await session.execute(stmt)
     await session.commit() 
-  

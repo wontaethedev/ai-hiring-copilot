@@ -9,11 +9,16 @@ from fastapi import (
   UploadFile,
   HTTPException,
   Depends,
+  Form,
 )
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.db import get_db
+from db.models import Role
+
 from lib.models.role import (
+  RoleDetails,
   RegisterResponse,
 )
 from lib.helpers.markdown import (
@@ -21,13 +26,42 @@ from lib.helpers.markdown import (
 )
 from lib.helpers.db.role import RoleDBHelper
 
-from db.db import get_db
 
 router = APIRouter()
 
 
+@router.get("/list_all")
+async def list_all(
+  db: AsyncSession = Depends(get_db),
+) -> list[RoleDetails]:
+  """
+  Lists all roles from the DB.
+
+  Returns:
+    - list[RoleDetails]: The details of all resumes in the DB.
+  """
+
+  try:
+    # Fetch roles from the DB
+    all_roles: list[Role] = await RoleDBHelper.list_roles(session=db)
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Failed to fetch roles from DB | {str(e)}")
+
+  try:
+    # Parse details and prepare response
+    all_roles_details: list[RoleDetails] = [
+      RoleDetails(id=role.id, name=role.name, description=role.description)
+      for role in all_roles
+    ]
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Failed to process roles fetched from DB | {str(e)}")
+
+  return all_roles_details
+
+
 @router.post("/register")
 async def register(
+  name: str = Form(...),
   file: UploadFile = File(...),
   db: AsyncSession = Depends(get_db),
 ) -> RegisterResponse:
@@ -35,6 +69,7 @@ async def register(
   Registers a role into the DB.
 
   Args:
+    - name: The name of the role
     - file: The job description for the role
   Returns:
     - RegisterResponse: The ID of the role uploaded to the DB
@@ -42,12 +77,12 @@ async def register(
 
   # TODO: SECURITY - sanitization, file size check (unless enforced on nginx level), harmful content, etc.
   if file.content_type not in [
-      "application/pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "text/markdown",
       "text/x-markdown",
+      "text/plain",
+      "application/octet-stream",
   ]:
-    raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF, DOCX, or Markdown file.")
+    raise HTTPException(status_code=400, detail="Invalid file type. Please upload a Markdown file.")
 
   try:
     # Read file
@@ -79,7 +114,8 @@ async def register(
     # Insert role into DB
     registered_role_id: str = await RoleDBHelper.insert(
        session=db,
-       description=role_description
+       name=name,
+       description=role_description,
     )
   except Exception as e:
     raise HTTPException(status_code=500, detail=f"Failed to save role into the DB | {str(e)}")

@@ -23,6 +23,7 @@ class RoleDBHelper:
 
   async def insert(
     session: AsyncSession,
+    name: str,
     description: str,
   ) -> str:
     """
@@ -37,6 +38,7 @@ class RoleDBHelper:
     """
 
     new_role: Role = Role(
+      name=name,
       description=description
     )
 
@@ -49,6 +51,7 @@ class RoleDBHelper:
   async def update(
     session: AsyncSession,
     id: str,
+    name: str,
     description: str,
   ) -> None:
     """
@@ -60,6 +63,7 @@ class RoleDBHelper:
     """
 
     stmt = update(Role).where(Role.id == id).values(
+      name=name,
       description=description,
     )
     await session.execute(stmt)
