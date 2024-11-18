@@ -1,0 +1,94 @@
+.border {
+  border: rgb(0 0 0 / 0.7) solid 1px;
+
+  margin: 40px 0 40px 0;
+}
+
+.home-page {
+  .c-content {
+    .role-selector {
+      .current-role {
+        margin: 0 0 15px 0;
+
+        font-size: 25px;
+        text-transform: uppercase;
+        font-weight: bold;
+
+        cursor: pointer;
+
+        .toggle-options-icon {
+          margin: 0 0 0 10px;
+        }
+      }
+      .options-container {
+        display: none;
+
+        &.visible {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .option {
+          margin: 0 0 5px 0;
+
+          cursor: pointer;
+        }
+      }
+    }
+
+    .upload-resumes-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+
+      margin: 0 0 20px 0;
+
+      .left-items {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .process-resumes-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+
+      margin: 0 0 40px 0;
+
+      .processed-resumes-preview {
+        margin: 0 0 0 15px;
+      }
+    }
+
+    .resume-container {
+      margin: 0 0 10px 0;
+
+      padding: 15px 20px;
+
+      border: rgb(0 0 0 / 0.7) solid 2px;
+
+      .attribute {
+        margin: 0 0 15px 0;
+      }
+    }
+  }
+}
+
+.file-preview {
+  margin: 0 50px 0 0;
+}
+
+.file-uploader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  margin: 0 15px 0 0;
+
+  input {
+    display: none;
+  }
+}

@@ -37,13 +37,3 @@ TOOLS: dict[RoleTypes] = {
     }
   }
 }
-
-SYSTEM_MSGS: dict[RoleTypes] = {
-  RoleTypes.SENIOR_PRODUCT_ENGINEER: """
-    You are a copilot assisting a hiring manager review resumes.
-    Here is the job description:
-      1. Need to know: FastAPI, Python, React
-      2. Minimum 2 years of experience
-      3. Live in Canada
-  """
-}

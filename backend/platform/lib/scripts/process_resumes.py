@@ -3,7 +3,7 @@ import logging
 from lib.helpers.openai import OpenAIHelper
 from lib.helpers.db.resume import ResumeDBHelper
 from lib.helpers.db.role import RoleDBHelper
-from lib.data.openai import OPEN_AI_API_KEY, OPEN_AI_ORGANIZATION_ID, TOOLS, SYSTEM_MSGS
+from lib.data.openai import OPEN_AI_API_KEY, OPEN_AI_ORGANIZATION_ID, TOOLS
 
 from lib.models.product.resume import RoleTypes, StatusTypes
 

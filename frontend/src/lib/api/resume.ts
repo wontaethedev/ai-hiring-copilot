@@ -25,6 +25,7 @@ export const getListByFiltersResumes = async (
 };
 
 export const registerResumes = async (
+  role_id: string,
   files: File[]
 ): Promise<void | string[]> => {
   if (!files.length) {
@@ -32,6 +33,7 @@ export const registerResumes = async (
   }
 
   const formData = new FormData();
+  formData.append("role_id", role_id);
   files.forEach((file) => formData.append("files", file));
 
   const response: AxiosResponse<string[]> = await apiClient.post(
