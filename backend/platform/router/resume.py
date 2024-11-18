@@ -9,6 +9,7 @@ from fastapi import (
   UploadFile,
   HTTPException,
   Depends,
+  Form,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +17,6 @@ from lib.models.product.resume import StatusTypes, ClassifierTypes
 from lib.models.resume import (
   RegisterResponse,
   ResumeDetails,
-  ListClassifiedResponse,
 )
 from lib.helpers.pdf import (
    extract_text_from_pdf
@@ -36,7 +36,7 @@ router = APIRouter()
 
 @router.post("/register")
 async def register(
-  role_id: str,
+  role_id: str = Form(...),
   files: list[UploadFile] = File(...),
   db: AsyncSession = Depends(get_db),
 ) -> RegisterResponse:
@@ -142,7 +142,7 @@ async def list_by_filters(
   """
   Lists resumes by given filters.
 
-  NOTE: Optional filters not provided are ignored.
+  NOTE: Optional filters that are not provided are ignored.
 
   TODO: Security - limit max num of resumes returned
 

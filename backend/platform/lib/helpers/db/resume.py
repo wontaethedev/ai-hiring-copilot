@@ -9,22 +9,25 @@ from db.models import Resume
 class ResumeDBHelper:
   async def select_by_filters(
     session: AsyncSession,
-    role_id: str,
-    status: StatusTypes = None,
-    classifier: ClassifierTypes = None,
+    role_id: str | None = None,
+    status: StatusTypes | None = None,
+    classifier: ClassifierTypes | None = None,
   ) -> list[Resume]:
     """
     Retrieves resume details by given filters from the DB.
     """
 
-    stmt = select(Resume).where(Resume.role_id == role_id)
+    stmt = select(Resume)
+
+    if role_id:
+      stmt = stmt.where(Resume.role_id == role_id)
 
     if status:
-      stmt.where(Resume.status == status)
+      stmt = stmt.where(Resume.status == status)
     
     if classifier:
       if classifier == ClassifierTypes.VERY_FIT:
-        stmt.where(Resume.fitness_score >= 85)
+        stmt = stmt.where(Resume.fitness_score >= 85)
       elif classifier == ClassifierTypes.FIT:
         stmt = stmt.where(Resume.fitness_score < 85)
         stmt = stmt.where(Resume.fitness_score >= 50)

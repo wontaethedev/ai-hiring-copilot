@@ -1,11 +1,14 @@
+import logging
+
 from lib.helpers.openai import OpenAIHelper
 from lib.helpers.db.resume import ResumeDBHelper
+from lib.helpers.db.role import RoleDBHelper
 from lib.data.openai import OPEN_AI_API_KEY, OPEN_AI_ORGANIZATION_ID, TOOLS, SYSTEM_MSGS
 
 from lib.models.product.resume import RoleTypes, StatusTypes
 
 from db.db import get_context_managed_session
-from db.models import Resume
+from db.models import Resume, Role
 
 async def process_resumes(
 ) -> list[str]:
@@ -29,7 +32,6 @@ async def process_resumes(
     resumes: list[Resume] = await ResumeDBHelper.select_by_filters(
       session=session,
       status=StatusTypes.PENDING,
-      max_num_resumes=5,
     )
 
     resume_ids: list[str] = [resume.id for resume in resumes]
@@ -48,6 +50,16 @@ async def process_resumes(
     for resume in resumes:
       resume_id: str = resume.id
       resume_content: str = resume.content
+      resume_role_id: str = resume.role_id
+
+      try:
+        resume_role: Role = await RoleDBHelper.get_role(session=session, id=resume_role_id)
+      except Exception as e:
+        await ResumeDBHelper.update_status(session=session, id=resume_id, status=StatusTypes.FAILED)
+        logging.error(f"Could not find associated role for the resume | {str(e)}")
+        continue
+
+      role_description: str = resume_role.description
 
       try:
         openai_helper: OpenAIHelper = OpenAIHelper(
@@ -58,20 +70,26 @@ async def process_resumes(
         # Process resume through OpenAI
         resume_data = openai_helper.function_call_prompt(
           user_msg=f"Here is the resume text: {str(resume_content)}",
-          system_msg=SYSTEM_MSGS[RoleTypes.SENIOR_PRODUCT_ENGINEER],
+          system_msg=f"""
+            You are a copilot assisting a hiring manager review resumes.
+            Here is the job description:
+            {role_description}
+          """,
           tools=[TOOLS[RoleTypes.SENIOR_PRODUCT_ENGINEER]],
         )
       except Exception as e:
         await ResumeDBHelper.update_status(session=session, id=resume_id, status=StatusTypes.FAILED)
-        raise Exception(f"Failed to assess resume using OpenAI | {str(e)}")
-      
+        logging.error(f"Failed to assess resume using OpenAI | {str(e)}")
+        continue
+
       try:
         base_requirement_satisfaction_score: int = resume_data['base_requirement_satisfaction_score']
         exceptionals: str = resume_data['exceptionals']
         fitness_score: int = resume_data['fitness_score']
       except Exception as e:
         await ResumeDBHelper.update_status(session=session, id=resume_id, status=StatusTypes.FAILED)
-        raise Exception(f"Failed to parse assessment data from OpenAI response | {str(e)}")
+        logging.error(f"Failed to parse assessment data from OpenAI response | {str(e)}")
+        continue
 
       try:
         await ResumeDBHelper.update(
@@ -83,14 +101,17 @@ async def process_resumes(
         )
       except Exception as e:
         await ResumeDBHelper.update_status(session=session, id=resume_id, status=StatusTypes.FAILED)
-        raise Exception(f"Failed to update resume information using OpenAI response | {str(e)}")
+        logging.error(f"Failed to update resume information using OpenAI response | {str(e)}")
+        continue
 
       try:
         await ResumeDBHelper.update_status(session=session, id=resume_id, status=StatusTypes.COMPLETE)
       except Exception as e:
         await ResumeDBHelper.update_status(session=session, id=resume_id, status=StatusTypes.FAILED)
-        raise Exception(f"Failed to update status of new resume to COMPLETE | {str(e)}")
+        logging.error(f"Failed to update status of new resume to COMPLETE | {str(e)}")
+        continue
 
       processed_resume_ids.append(resume_id)
 
     return processed_resume_ids
+  

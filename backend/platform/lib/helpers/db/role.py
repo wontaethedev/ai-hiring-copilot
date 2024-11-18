@@ -5,6 +5,27 @@ from db.models import Role
 
 
 class RoleDBHelper:
+  async def get_role(
+    session: AsyncSession,
+    id: str,
+  ) -> Role:
+    """
+    Fetch a role from the DB by ID.
+
+    Returns:
+      - The role with matching ID
+    """
+
+    stmt = select(Role).where(Role.id == id)
+    result = await session.execute(stmt)
+    role = result.scalars().first()
+
+    if not role:
+      raise ValueError(f"Role with ID {id} not found.")
+
+    return role
+
+
   async def list_roles(
     session: AsyncSession,
   ) -> list[Role]:
