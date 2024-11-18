@@ -1,4 +1,8 @@
+@use "@/assets/styles/common-variables.scss" as vars;
+
 .c-page {
+  margin: 0 0 0 vars.$nav-bar-width;
+
   width: 100vw;
   min-height: 100vh;
 }
