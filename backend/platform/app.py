@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from router.dev import router as dev_router
 from router.resume import router as resume_router
+from router.role import router as role_router
 
 
 app: FastAPI = FastAPI()
@@ -23,3 +24,4 @@ app.add_middleware(
 
 app.include_router(dev_router, prefix="/dev")
 app.include_router(resume_router, prefix="/resume")
+app.include_router(role_router, prefix="/role")

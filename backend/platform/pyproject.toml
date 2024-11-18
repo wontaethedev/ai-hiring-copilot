@@ -22,6 +22,8 @@ pdfminer-six = "^20240706"
 python-multipart = "^0.0.17"
 openai = "^1.54.3"
 python-docx = "^1.1.2"
+markdown = "^3.7"
+beautifulsoup4 = "^4.12.3"
 
 
 [tool.poetry.group.dev.dependencies]

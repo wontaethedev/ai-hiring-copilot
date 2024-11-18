@@ -12,7 +12,7 @@ from fastapi import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lib.models.product.resume import RoleTypes, StatusTypes
+from lib.models.product.resume import StatusTypes
 from lib.models.resume import (
   RegisterResponse,
   ResumeDetails,
@@ -41,10 +41,10 @@ async def register(
   db: AsyncSession = Depends(get_db),
 ) -> RegisterResponse:
   """
-  Registers resume files into the DB into PENDING mode, for the role SENIOR PRODUCT ENGINEER.
-  TODO: Make role dynamic
+  Registers resume files into the DB into PENDING mode, for the given role.
 
-  Registered resume files should be picked up by the script `lib/scripts/process_resumes.py` and processed.
+  Registered resume files should be picked up by the script `lib/scripts/process_resumes.py` and processed
+  according to the description of the role specified.
 
   Args:
     - role_id: The ID of the role that the resume files are for
@@ -53,7 +53,7 @@ async def register(
     - RegisterResponse: The ids of the resumes uploaded to the DB
   """
 
-  processed_resume_ids: list[str] = []
+  registered_resume_ids: list[str] = []
 
   # TODO: SECURITY - sanitization, file size check (unless enforced on nginx level), harmful content, etc.
   for file in files:
@@ -105,11 +105,11 @@ async def register(
     except Exception as e:
       raise HTTPException(status_code=500, detail=f"Failed to save processed resumes into the DB | {str(e)}")
     try:
-      processed_resume_ids.append(inserted_resume_id)
+      registered_resume_ids.append(inserted_resume_id)
     except Exception as e:
       logging.error(f"Failed to parse ID from DB inserted resume | {str(e)}")
 
-  return RegisterResponse(ids=processed_resume_ids)
+  return RegisterResponse(ids=registered_resume_ids)
 
 
 @router.post("/process")
