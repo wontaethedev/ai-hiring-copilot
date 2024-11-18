@@ -92,6 +92,8 @@ class ResumeDBHelper:
     """
     Updates the status of a resume detail in the DB.
     """
+    print(' yaaaa', status)
+
     stmt = update(Resume).where(Resume.id == id).values(
       status=status,
     )

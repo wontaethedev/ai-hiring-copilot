@@ -9,6 +9,7 @@ import { ResumeDetails } from "@/lib/models/resume";
 import {
   ResumeStatusTypes,
   ResumeClassifierTypes,
+  ResumeCategoryTypes,
 } from "@/lib/models/product/resume";
 import { RoleDetails } from "@/lib/models/role";
 import { getListAllRoles } from "@/lib/api/role";
@@ -17,23 +18,37 @@ import {
   ResumeFilters,
   registerResumes,
   processResumes,
+  updateResumeStatus,
 } from "@/lib/api/resume";
 
 import SideBar from "@/components/side-bar";
 
+type ResumeCategory =
+  | {
+      type: ResumeCategoryTypes;
+      value: ResumeClassifierTypes;
+    }
+  | {
+      type: ResumeCategoryTypes;
+      value: ResumeStatusTypes;
+    };
+
 const HomePage: React.FC = () => {
   const [roles, setRoles] = useState<RoleDetails[]>([]);
-  const [isRoleLoading, setIsRoleLoading] = useState<boolean>(true);
-  const [resumes, setResumes] = useState<ResumeDetails[]>([]);
-  const [isResumesLoading, setIsResumesLoading] = useState<boolean>(true);
-
   const [role, setRole] = useState<RoleDetails | null>(null);
+  const [isRolesLoading, setIsRolesLoading] = useState<boolean>(true);
   const [isRoleOptionsVisible, setIsRoleOptionsVisible] =
     useState<boolean>(false);
-  const [selectedClassifier, setSelectedClassifier] =
-    useState<ResumeClassifierTypes>(ResumeClassifierTypes.VERY_FIT);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const [resumes, setResumes] = useState<ResumeDetails[]>([]);
+  const [isResumesLoading, setIsResumesLoading] = useState<boolean>(true);
+  const [selectedResumeCategory, setSelectedResumeCategory] =
+    useState<ResumeCategory>({
+      type: ResumeCategoryTypes.CLASSIFIER,
+      value: ResumeClassifierTypes.VERY_FIT,
+    });
   const [processedResumeIds, setProcessedResumeIds] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +63,7 @@ const HomePage: React.FC = () => {
     setError(null);
 
     try {
-      setIsRoleLoading(true);
+      setIsRolesLoading(true);
       const result: RoleDetails[] = await getListAllRoles();
       setRoles(result);
       // Assign first role as default
@@ -58,38 +73,41 @@ const HomePage: React.FC = () => {
       setError("Failed to fetch roles");
       console.error("Error fetching roles:", err);
     } finally {
-      setIsRoleLoading(false);
+      setIsRolesLoading(false);
     }
   };
 
-  const fetchResumes = useCallback(
-    async (status: ResumeStatusTypes = ResumeStatusTypes.COMPLETE) => {
-      setError(null);
+  const fetchResumes = useCallback(async () => {
+    setError(null);
 
-      if (!role) {
-        setIsResumesLoading(false);
-        return;
-      }
+    if (!role) {
+      setIsResumesLoading(false);
+      return;
+    }
 
-      const filters: ResumeFilters = {
-        role_id: role.id,
-        status: status,
-        classifier: selectedClassifier,
-      };
+    const filters: ResumeFilters = {
+      role_id: role.id,
+    };
 
-      try {
-        setIsResumesLoading(true);
-        const result: ResumeDetails[] = await getListByFiltersResumes(filters);
-        setResumes(result);
-      } catch (err) {
-        setError("Failed to fetch resumes");
-        console.error("Error fetching resumes:", err);
-      } finally {
-        setIsResumesLoading(false);
-      }
-    },
-    [role, selectedClassifier] // Dependencies
-  );
+    if (selectedResumeCategory.type === ResumeCategoryTypes.CLASSIFIER) {
+      filters.status = ResumeStatusTypes.COMPLETE;
+      filters.classifier =
+        selectedResumeCategory.value as ResumeClassifierTypes;
+    } else {
+      filters.status = selectedResumeCategory.value as ResumeStatusTypes;
+    }
+
+    try {
+      setIsResumesLoading(true);
+      const result: ResumeDetails[] = await getListByFiltersResumes(filters);
+      setResumes(result);
+    } catch (err) {
+      setError("Failed to fetch resumes");
+      console.error("Error fetching resumes:", err);
+    } finally {
+      setIsResumesLoading(false);
+    }
+  }, [role, selectedResumeCategory.type, selectedResumeCategory.value]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -137,6 +155,22 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleUpdateResumeStatus = async (
+    id: string,
+    status: ResumeStatusTypes
+  ) => {
+    setError(null);
+
+    try {
+      const result: boolean = await updateResumeStatus(id, status);
+      console.log("Update status success", result);
+      await fetchResumes();
+    } catch (err) {
+      setError("Failed to update resume status");
+      console.error("Error processing data:", err);
+    }
+  };
+
   useEffect(() => {
     fetchRole();
   }, []);
@@ -151,19 +185,68 @@ const HomePage: React.FC = () => {
       <div className="header">Candidates</div>
       <div
         className="sidebar-item"
-        onClick={() => setSelectedClassifier(ResumeClassifierTypes.VERY_FIT)}
+        onClick={() =>
+          setSelectedResumeCategory({
+            type: ResumeCategoryTypes.CLASSIFIER,
+            value: ResumeClassifierTypes.VERY_FIT,
+          })
+        }
       >
         Very Fit
       </div>
       <div
         className="sidebar-item"
-        onClick={() => setSelectedClassifier(ResumeClassifierTypes.FIT)}
+        onClick={() =>
+          setSelectedResumeCategory({
+            type: ResumeCategoryTypes.CLASSIFIER,
+            value: ResumeClassifierTypes.FIT,
+          })
+        }
       >
         Fit
       </div>
       <div
         className="sidebar-item"
-        onClick={() => setSelectedClassifier(ResumeClassifierTypes.UNFIT)}
+        onClick={() =>
+          setSelectedResumeCategory({
+            type: ResumeCategoryTypes.CLASSIFIER,
+            value: ResumeClassifierTypes.UNFIT,
+          })
+        }
+      >
+        Unfit
+      </div>
+      <div className="header">Assessed</div>
+      <div
+        className="sidebar-item"
+        onClick={() =>
+          setSelectedResumeCategory({
+            type: ResumeCategoryTypes.STATUS,
+            value: ResumeStatusTypes.ASSESSED_FIT,
+          })
+        }
+      >
+        Fit
+      </div>
+      <div
+        className="sidebar-item"
+        onClick={() =>
+          setSelectedResumeCategory({
+            type: ResumeCategoryTypes.STATUS,
+            value: ResumeStatusTypes.ASSESSED_HOLD,
+          })
+        }
+      >
+        Hold
+      </div>
+      <div
+        className="sidebar-item"
+        onClick={() =>
+          setSelectedResumeCategory({
+            type: ResumeCategoryTypes.STATUS,
+            value: ResumeStatusTypes.ASSESSED_UNFIT,
+          })
+        }
       >
         Unfit
       </div>
@@ -182,16 +265,57 @@ const HomePage: React.FC = () => {
         resumes.map((resume) => {
           return (
             <div key={resume.id} className="resume-container">
-              <div className="attribute">ID: {resume.id}</div>
-              <div className="attribute">
-                Base Requirement Satisfaction Score:{" "}
-                {resume.base_requirement_satisfaction_score}
+              <div className="left-items">
+                <div className="attribute">ID: {resume.id}</div>
+                <div className="attribute">
+                  Base Requirement Satisfaction Score:{" "}
+                  {resume.base_requirement_satisfaction_score}
+                </div>
+                <div className="attribute">
+                  Exceptional Considerations:{" "}
+                  {resume.exceptional_considerations}
+                </div>
+                <div className="attribute">
+                  Fitness Score: {resume.fitness_score}
+                </div>
               </div>
-              <div className="attribute">
-                Exceptional Considerations: {resume.exceptional_considerations}
-              </div>
-              <div className="attribute">
-                Fitness Score: {resume.fitness_score}
+              <div className="right-items">
+                <button>
+                  <FontAwesomeIcon
+                    className="classify-icon"
+                    icon={["fas", "thumbs-up"]}
+                    onClick={() =>
+                      handleUpdateResumeStatus(
+                        resume.id,
+                        ResumeStatusTypes.ASSESSED_FIT
+                      )
+                    }
+                  />
+                </button>
+                <button>
+                  <FontAwesomeIcon
+                    className="classify-icon"
+                    icon={["fas", "hand"]}
+                    onClick={() =>
+                      handleUpdateResumeStatus(
+                        resume.id,
+                        ResumeStatusTypes.ASSESSED_HOLD
+                      )
+                    }
+                  />
+                </button>
+                <button>
+                  <FontAwesomeIcon
+                    className="classify-icon"
+                    icon={["fas", "thumbs-down"]}
+                    onClick={() =>
+                      handleUpdateResumeStatus(
+                        resume.id,
+                        ResumeStatusTypes.ASSESSED_UNFIT
+                      )
+                    }
+                  />
+                </button>
               </div>
             </div>
           );
@@ -278,7 +402,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
         <div className="border" />
-        {isResumesLoading || isRoleLoading
+        {isResumesLoading || isRolesLoading
           ? loadingContent()
           : error
           ? errorContent()

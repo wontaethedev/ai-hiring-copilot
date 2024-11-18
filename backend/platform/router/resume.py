@@ -166,6 +166,9 @@ async def list_by_filters(
   except Exception as e:
     raise HTTPException(status_code=500, detail=f"Failed to fetch resumes from DB | {str(e)}")
 
+  for resume in resumes:
+    print('asdf', resume.id, resume.status)
+
   try:
     resume_details: list[ResumeDetails] = [
       ResumeDetails(
@@ -180,3 +183,28 @@ async def list_by_filters(
     raise HTTPException(status_code=500, detail=f"Failed to process resumes fetched from DB | {str(e)}")
 
   return resume_details
+
+
+@router.post("/update_status")
+async def update_status(
+  id: str = Form(...),
+  status: StatusTypes = Form(...),
+  db: AsyncSession = Depends(get_db),
+) -> bool:
+  """
+  Updates the status of a resume.
+
+  Args:
+    - id: The ID of the resume to update
+    - status: The status that the resume should update to
+  """
+
+  if status not in [StatusTypes.ASSESSED_FIT, StatusTypes.ASSESSED_HOLD, StatusTypes.ASSESSED_UNFIT]:
+    raise HTTPException(status_code=400, detail="Invalid status type. Please enter a human processing status.")
+
+  try:
+    await ResumeDBHelper.update_status(session=db, id=id, status=status)
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Failed to update status of given resume | {str(e)}")
+
+  return True

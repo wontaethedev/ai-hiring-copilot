@@ -15,8 +15,9 @@ class StatusTypes(StrEnum):
   FAILED = 'failed'
 
   # Human processing
-  ASSESSED_FIT = 'processed_fit'
-  ASSESSED_UNFIT = 'processed_unfit'
+  ASSESSED_FIT = 'assessed_fit'
+  ASSESSED_HOLD = 'assessed_hold'
+  ASSESSED_UNFIT = 'assessed_unfit'
 
 
 class RoleTypes(StrEnum):

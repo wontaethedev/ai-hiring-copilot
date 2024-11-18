@@ -69,13 +69,43 @@
 
     .resume-container {
       margin: 0 0 10px 0;
-
       padding: 15px 20px;
+
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
 
       border: rgb(0 0 0 / 0.7) solid 2px;
 
-      .attribute {
-        margin: 0 0 15px 0;
+      .left-items {
+        .attribute {
+          margin: 0 0 15px 0;
+        }
+      }
+
+      .right-items {
+        min-width: 100px;
+
+        display: flex;
+        flex-direction: column;
+        align-items: end;
+
+        button {
+          width: 30px;
+          height: 30px;
+          margin: 0 0 5px 0;
+
+          background: none;
+          color: black;
+          border: rgb(0 0 0 / 0.7) solid 2px;
+
+          cursor: pointer;
+
+          &:hover {
+            background-color: black;
+            color: white;
+          }
+        }
       }
     }
   }

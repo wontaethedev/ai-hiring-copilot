@@ -12,6 +12,12 @@ export enum ResumeStatusTypes {
   FAILED = "failed",
 
   // Human processing
-  ASSESSED_FIT = "processed_fit",
-  ASSESSED_UNFIT = "processed_unfit",
+  ASSESSED_FIT = "assessed_fit",
+  ASSESSED_HOLD = "assessed_hold",
+  ASSESSED_UNFIT = "assessed_unfit",
+}
+
+export enum ResumeCategoryTypes {
+  CLASSIFIER = "classifier",
+  STATUS = "status",
 }

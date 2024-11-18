@@ -56,3 +56,24 @@ export const processResumes = async (): Promise<string[]> => {
 
   return response.data;
 };
+
+export const updateResumeStatus = async (
+  role_id: string,
+  status: ResumeStatusTypes
+): Promise<boolean> => {
+  const formData = new FormData();
+  formData.append("id", role_id);
+  formData.append("status", status);
+
+  const response: AxiosResponse<boolean> = await apiClient.post(
+    "/resume/update_status",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+};
