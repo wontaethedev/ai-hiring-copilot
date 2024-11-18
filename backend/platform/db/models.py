@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, Text
+from sqlalchemy import Column, Integer, String, Enum, Text, ForeignKey
 from sqlalchemy.orm import declarative_base
 
 from lib.helpers.ulid import generate_ulid
@@ -20,7 +20,8 @@ class Resume(Base):
   __tablename__ = 'resume'
 
   id: str = Column(String, primary_key=True, default=generate_ulid)
-  role: str = Column(Enum(RoleTypes), nullable=False)
+  role: str = Column(Enum(RoleTypes), nullable=True) # WARNING: deprecated
+  role_id: str = Column(String, ForeignKey("role.id", ondelete="CASCADE"), nullable=True)
   status: str = Column(Enum(StatusTypes), nullable=False)
   content: str = Column(Text, nullable=False) # TODO: User input - sanitization, length limit, etc.
 
@@ -28,3 +29,10 @@ class Resume(Base):
   exceptional_considerations: str | None = Column(String)
   fitness_score: int | None = Column(Integer)
   # TODO: Add created_at
+
+
+class Role(Base):
+  __tablename__ = 'role'
+
+  id: str = Column(String, primary_key=True, default=generate_ulid)
+  description: str = Column(Text, nullable=False) # TODO: User input - sanitization, length limit, etc.

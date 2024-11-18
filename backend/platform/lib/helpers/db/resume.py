@@ -1,7 +1,7 @@
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lib.models.product.resume import RoleTypes, StatusTypes
+from lib.models.product.resume import StatusTypes
 
 from db.models import Resume
 
@@ -23,7 +23,7 @@ class ResumeDBHelper:
 
   async def insert(
     session: AsyncSession,
-    role: RoleTypes,
+    role_id: str,
     status: StatusTypes,
     content: str,
   ) -> str:
@@ -32,7 +32,7 @@ class ResumeDBHelper:
     """
 
     new_resume: Resume = Resume(
-      role=role,
+      role_id=role_id,
       status=status,
       content=content,
     )
@@ -92,3 +92,4 @@ class ResumeDBHelper:
     )
     await session.execute(stmt)
     await session.commit() 
+  

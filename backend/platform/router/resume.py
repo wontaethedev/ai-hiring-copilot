@@ -36,6 +36,7 @@ router = APIRouter()
 
 @router.post("/register")
 async def register(
+  role_id: str,
   files: list[UploadFile] = File(...),
   db: AsyncSession = Depends(get_db),
 ) -> RegisterResponse:
@@ -46,6 +47,7 @@ async def register(
   Registered resume files should be picked up by the script `lib/scripts/process_resumes.py` and processed.
 
   Args:
+    - role_id: The ID of the role that the resume files are for
     - files: The resume files to register into the DB
   Returns:
     - RegisterResponse: The ids of the resumes uploaded to the DB
@@ -96,7 +98,7 @@ async def register(
       # Insert resume into DB in pending status
       inserted_resume_id: str = await ResumeDBHelper.insert(
         session=db,
-        role=RoleTypes.SENIOR_PRODUCT_ENGINEER,
+        role_id=role_id,
         status=StatusTypes.PENDING,
         content=resume_text,
       )
