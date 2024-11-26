@@ -1,4 +1,39 @@
+@use "@/assets/styles/common-variables.scss" as vars;
+
 .c-page {
+  margin: 0 0 0 vars.$nav-bar-width;
+
   width: 100vw;
   min-height: 100vh;
+}
+
+.c-content {
+  width: calc(100% - vars.$side-bar-width - vars.$nav-bar-width);
+  min-height: 100vh;
+
+  margin: 0 0 0 vars.$side-bar-width;
+
+  padding: 30px 50px 50px 50px;
+}
+
+.c-button {
+  display: flex;
+  justify-content: start;
+
+  padding: 5px 10px;
+
+  font-size: 15px;
+  font-weight: bold;
+  text-transform: uppercase;
+
+  background: none;
+  color: black;
+  border: rgb(0 0 0 / 0.7) solid 2px;
+
+  cursor: pointer;
+
+  &:hover {
+    background-color: black;
+    color: white;
+  }
 }

@@ -9,14 +9,14 @@ from fastapi import (
   UploadFile,
   HTTPException,
   Depends,
+  Form,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lib.models.product.resume import RoleTypes, StatusTypes
+from lib.models.product.resume import StatusTypes, ClassifierTypes
 from lib.models.resume import (
   RegisterResponse,
   ResumeDetails,
-  ListClassifiedResponse,
 )
 from lib.helpers.pdf import (
    extract_text_from_pdf
@@ -36,22 +36,24 @@ router = APIRouter()
 
 @router.post("/register")
 async def register(
+  role_id: str = Form(...),
   files: list[UploadFile] = File(...),
   db: AsyncSession = Depends(get_db),
 ) -> RegisterResponse:
   """
-  Registers resume files into the DB into PENDING mode, for the role SENIOR PRODUCT ENGINEER.
-  TODO: Make role dynamic
+  Registers resume files into the DB into PENDING mode, for the given role.
 
-  Registered resume files should be picked up by the script `lib/scripts/process_resumes.py` and processed.
+  Registered resume files should be picked up by the script `lib/scripts/process_resumes.py` and processed
+  according to the description of the role specified.
 
   Args:
+    - role_id: The ID of the role that the resume files are for
     - files: The resume files to register into the DB
   Returns:
     - RegisterResponse: The ids of the resumes uploaded to the DB
   """
 
-  processed_resume_ids: list[str] = []
+  registered_resume_ids: list[str] = []
 
   # TODO: SECURITY - sanitization, file size check (unless enforced on nginx level), harmful content, etc.
   for file in files:
@@ -96,18 +98,18 @@ async def register(
       # Insert resume into DB in pending status
       inserted_resume_id: str = await ResumeDBHelper.insert(
         session=db,
-        role=RoleTypes.SENIOR_PRODUCT_ENGINEER,
+        role_id=role_id,
         status=StatusTypes.PENDING,
         content=resume_text,
       )
     except Exception as e:
       raise HTTPException(status_code=500, detail=f"Failed to save processed resumes into the DB | {str(e)}")
     try:
-      processed_resume_ids.append(inserted_resume_id)
+      registered_resume_ids.append(inserted_resume_id)
     except Exception as e:
       logging.error(f"Failed to parse ID from DB inserted resume | {str(e)}")
 
-  return RegisterResponse(ids=processed_resume_ids)
+  return RegisterResponse(ids=registered_resume_ids)
 
 
 @router.post("/process")
@@ -130,80 +132,79 @@ async def process() -> list[str]:
       raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/list_classified")
-async def list_classified(
+@router.get("/list_by_filters")
+async def list_by_filters(
+  role_id: str,
+  status: StatusTypes = None,
+  classifier: ClassifierTypes = None,
   db: AsyncSession = Depends(get_db),
-) -> ListClassifiedResponse:
+) -> list[ResumeDetails]:
   """
-  Lists resumes processed by OpenAI in 3 classifications:
-    - very_fit: Fitness score >= 75, candidate is very fit for the role
-    - fit: 75 > Fitness score >= 40, candidate is fit for the role
-    - not_fit: 40 > Fitness score, candidate is not the most fit for the role
+  Lists resumes by given filters.
 
-  NOTE: Resumes processed by OpenAI are marked as status COMPLETE
+  NOTE: Optional filters that are not provided are ignored.
+
+  TODO: Security - limit max num of resumes returned
+
+  Args:
+    - role_id: The role that the resumes are for
+    - status: The status to filter resumes by
+    - The minimum fitness score to filter resumes by
 
   Returns:
-    - ListClassifiedResponse: Resume details classified into the 3 classifications
-      - ResumeDetails contains the following information:
-        - base_requirement_satisfaction_score: How much the candidate satisfies the base requirements out of 100.
-        - exceptional_considerations: Any exceptional stand outs that may put the candidate for particular consideration.
-        - fitness_score: How fit the candidate is for the role out of 100.
+    - list[ResumeDetails]: The list of resume details requested
   """
 
-  very_fit_resumes: list[ResumeDetails] = []
-  fit_resumes: list[ResumeDetails] = []
-  not_fit_resumes: list[ResumeDetails] = []
-
   try:
-    # Fetch processed resumes from the DB
-    processed_resumes: list[Resume] = await ResumeDBHelper.select_by_filters(
+    # Fetch resumes from the DB
+    resumes: list[Resume] = await ResumeDBHelper.select_by_filters(
       session=db,
-      status=StatusTypes.COMPLETE,
-      max_num_resumes=100,
+      role_id=role_id,
+      status=status,
+      classifier=classifier,
     )
   except Exception as e:
-    raise HTTPException(status_code=500, detail=f"Failed to fetch processed resumes from DB | {str(e)}")
+    raise HTTPException(status_code=500, detail=f"Failed to fetch resumes from DB | {str(e)}")
+
+  for resume in resumes:
+    print('asdf', resume.id, resume.status)
 
   try:
-    # Loop over each resume, parse & validate details
-    for resume in processed_resumes:
-      try:
-        # Parse resume details
-        resume_id: str =  resume.id
-        resume_base_requirement_satisfaction_score: int | None = resume.base_requirement_satisfaction_score
-        resume_exceptional_considerations: str | None = resume.exceptional_considerations
-        resume_fitness_score: int | None = resume.fitness_score
-
-        # Validate resume details
-        if (
-          resume_base_requirement_satisfaction_score is None
-          or resume_exceptional_considerations is None
-          or resume_fitness_score is None
-        ):
-          raise Exception("Resume does not have necessary assessment details")
-
-        # Classify resume depending on fitness score
-        curr_resume: ResumeDetails = ResumeDetails(
-          id=resume_id,
-          base_requirement_satisfaction_score=resume_base_requirement_satisfaction_score,
-          exceptional_considerations=resume_exceptional_considerations,
-          fitness_score=resume_fitness_score,
-        )
-        if resume_fitness_score >= 75:
-          very_fit_resumes.append(curr_resume)
-        elif resume_fitness_score >= 40:
-          fit_resumes.append(curr_resume)
-        else:
-          not_fit_resumes.append(curr_resume)
-      except Exception as e:
-        # Do nothing, move on to next resume
-        logging.error(f"Failed to parse resume details | {str(e)}")
+    resume_details: list[ResumeDetails] = [
+      ResumeDetails(
+        id=resume.id,
+        base_requirement_satisfaction_score=resume.base_requirement_satisfaction_score,
+        exceptional_considerations=resume.exceptional_considerations,
+        fitness_score=resume.fitness_score
+      )
+      for resume in resumes
+    ]
   except Exception as e:
-    # Should not happen
-    raise HTTPException(status_code=500, detail=f"Failed to prepare processed resumes | {str(e)}")
+    raise HTTPException(status_code=500, detail=f"Failed to process resumes fetched from DB | {str(e)}")
 
-  return ListClassifiedResponse(
-    very_fit=very_fit_resumes,
-    fit=fit_resumes,
-    not_fit=not_fit_resumes,
-  )
+  return resume_details
+
+
+@router.post("/update_status")
+async def update_status(
+  id: str = Form(...),
+  status: StatusTypes = Form(...),
+  db: AsyncSession = Depends(get_db),
+) -> bool:
+  """
+  Updates the status of a resume.
+
+  Args:
+    - id: The ID of the resume to update
+    - status: The status that the resume should update to
+  """
+
+  if status not in [StatusTypes.ASSESSED_FIT, StatusTypes.ASSESSED_HOLD, StatusTypes.ASSESSED_UNFIT]:
+    raise HTTPException(status_code=400, detail="Invalid status type. Please enter a human processing status.")
+
+  try:
+    await ResumeDBHelper.update_status(session=db, id=id, status=status)
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Failed to update status of given resume | {str(e)}")
+
+  return True

@@ -12,4 +12,12 @@ export default defineConfig({
   server: {
     port: 5812,
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: "modern-compiler",
+        importers: [],
+      },
+    },
+  },
 });
