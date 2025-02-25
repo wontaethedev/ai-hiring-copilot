@@ -4,26 +4,26 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: platform
+      POSTGRES_DB: app-core
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
 
-  platform:
-    build: ./platform
+  app-core:
+    build: ./app-core
     depends_on:
       - db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: platform
+      POSTGRES_DB: app-core
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     ports:
       - "8000:8000"
     volumes:
-      - ./platform:/app
+      - ./app-core:/app
       - ./.env:/app/.env
     command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
     networks:
