@@ -1,51 +1,51 @@
-from typing import TypedDict
-import boto3
-from concurrent.futures import ThreadPoolExecutor
-
-
-class FileUpload(TypedDict):
-    local_file_path: str
-    object_key: str
+import aioboto3
+import asyncio
 
 
 class S3Handler:
-    def __init__(self):
-        self.client = boto3.resource("s3")
+    def __init__(
+        self,
+        aws_access_key_id: str,
+        aws_secret_access_key: str,
+        region_name: str,
+        s3_bucket_name: str,
+    ):
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.region_name = region_name
+        try:
+            self.session = aioboto3.Session(
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+                region_name=region_name,
+            )
+        except Exception as e:
+            raise Exception(f"Failed to create AWS S3 session | {str(e)}")
+        self.s3_bucket_name = s3_bucket_name
 
-    def upload_file(self, file_upload: FileUpload, bucket_name: str) -> None:
+    async def upload_file(self, local_file_path: str, object_key: str) -> None:
         """
         Upload a file to the S3 bucket
         """
-        local_file_path = file_upload["local_file_path"]
-        object_key = file_upload["object_key"]
-        if not local_file_path or not object_key:
-            raise ValueError(f"Missing keys in file_upload: {file_upload}")
 
-        try:
-            self.client.Bucket(bucket_name).upload_file(local_file_path, object_key)
-        except Exception as e:
-            raise Exception(
-                f"Failed to upload the file {local_file_path} to S3 bucket | {str(e)}"
-            )
+        async with self.session.client("s3") as s3:
+            try:
+                await s3.upload_file(local_file_path, self.s3_bucket_name, object_key)
+            except Exception as e:
+                raise Exception(
+                    f"Failed to upload the file {local_file_path} to S3 bucket | {str(e)}"
+                )
 
-    def batch_upload_files(
-        self,
-        file_uploads: list[FileUpload],
-        bucket_name: str,
-        max_sessions: int = 5,
-    ) -> None:
+    async def batch_upload_files(self, files: list[tuple[str, str]]) -> None:
         """
-        Upload a batch of files to the S3 bucket
+        Upload a batch of files to the S3 bucket concurrently
         """
-        with ThreadPoolExecutor(max_workers=max_sessions) as executor:
-            futures = []
 
-            for file_upload in file_uploads:
-                future = executor.submit(self.upload_file, file_upload, bucket_name)
-                futures.append(future)
+        tasks = []
+        for local_path, object_key in files:
+            tasks.append(self.upload_file(local_path, object_key))
 
-            for f in futures:
-                f.result()
+        await asyncio.gather(*tasks)
 
     def download_file(self):
         """
