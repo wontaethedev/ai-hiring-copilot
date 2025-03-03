@@ -124,7 +124,7 @@ class S3Handler:
 
         async with self.session.client("s3") as s3:
             try:
-                response = s3.generate_presigned_post(
+                response = await s3.generate_presigned_post(
                     self.s3_bucket_name,
                     object_name,
                     Fields=fields,
