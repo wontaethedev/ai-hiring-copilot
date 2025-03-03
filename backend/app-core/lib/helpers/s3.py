@@ -99,7 +99,7 @@ class S3Handler:
 
         async with self.session.client("s3") as s3:
             try:
-                url = s3.generate_presigned_url(
+                url = await s3.generate_presigned_url(
                     "get_object",
                     Params={"Bucket": self.s3_bucket_name, "Key": object_name},
                     ExpiresIn=expiration,
