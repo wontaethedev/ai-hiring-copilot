@@ -1,7 +1,9 @@
 import aioboto3
 import asyncio
-from aiohttp import web
 from multidict import MultiDict
+from fastapi import File, Form, UploadFile
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 
 class S3Handler:
@@ -9,90 +11,86 @@ class S3Handler:
         self,
         aws_access_key_id: str,
         aws_secret_access_key: str,
-        region_name: str,
+        aws_region_name: str,
         s3_bucket_name: str,
     ):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.region_name = region_name
+        self.aws_region_name = aws_region_name
+        self.s3_bucket_name = s3_bucket_name
         try:
             self.session = aioboto3.Session(
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
-                region_name=region_name,
+                region_name=aws_region_name,
             )
         except Exception as e:
             raise Exception(f"Failed to create AWS S3 session | {str(e)}")
-        self.s3_bucket_name = s3_bucket_name
 
-    async def upload_file(self, local_file_path: str, object_name: str) -> None:
+    async def upload_file(
+        self, file: UploadFile = File(...), s3_path: str = Form(...)
+    ) -> None:
         """
         Upload a file to the S3 bucket
         """
 
+        object_key = f"{s3_path}/{file.filename}"
+
         async with self.session.client("s3") as s3:
             try:
-                await s3.upload_file(local_file_path, self.s3_bucket_name, object_name)
+                await s3.upload_fileobj(file.file, self.s3_bucket_name, object_key)
             except Exception as e:
                 raise Exception(
-                    f"Failed to upload the file {local_file_path} to S3 bucket | {str(e)}"
-                )
+                    f"Failed to upload the file {file.filename} to S3 bucket"
+                ) from e
 
-    async def batch_upload_files(self, files: list[tuple[str, str]]) -> None:
+    async def batch_upload_files(self, files: list[UploadFile], s3_path: str) -> list:
         """
         Upload a batch of files to the S3 bucket concurrently
+
+        Returns:
+          - failed_files: a list of files failed to upload
         """
 
-        tasks = []
-        for local_path, object_name in files:
-            tasks.append(self.upload_file(local_path, object_name))
-
+        tasks = [self.upload_file(file, s3_path) for file in files]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        exceptions = [r for r in results if isinstance(r, Exception)]
-        if exceptions:
-            raise Exception(f"Batch upload failed: {exceptions}")
+        failed_files = []
+        for file, result in zip(files, results):
+            if isinstance(result, Exception):
+                failed_files.append(file.filename)
+
+        return failed_files
 
     async def download_file(
         self,
-        object_name: str,
+        s3_path: str,
         filename: str,
-        *,
-        request: web.Request,
         chunk_size: int = 69 * 1024,
-    ):
+    ) -> StreamingResponse:
         """
         Download a file from the S3 bucket
         """
 
+        object_key = f"{s3_path}/{filename}"
+
         async with self.session.client("s3") as s3:
-            s3_ob = await s3.get_object(Bucket=self.s3_bucket_name, Key=object_name)
-
-            ob_info = s3_ob["ResponseMetadata"]["HTTPHeaders"]
-            resposne = web.StreamResponse(
-                headers=MultiDict(
-                    {
-                        "CONTENT-DISPOSITION": (f"attachment; filename='{filename}'"),
-                        "Content-Type": ob_info["content-type"],
-                    }
+            try:
+                s3_object = await s3.get_object(
+                    Bucket=self.s3_bucket_name, Key=object_key
                 )
-            )
-            resposne.content_type = ob_info["content-type"]
-            resposne.content_length = ob_info["content-length"]
-            await resposne.prepare(request)
+            except Exception as e:
+                raise Exception(f"File not found in S3: {str(e)}")
 
-            stream = s3_ob["Body"]
-            while True:
-                chunk = await stream.read(chunk_size)
-                if not chunk:
-                    break
-                await resposne.write(chunk)
+        async def iterfile():
+            while chunk := await s3_object["Body"].read(chunk_size):
+                yield chunk
 
-        return resposne
+        return StreamingResponse(iterfile(), media_type="application/octet-stream")
 
     async def generate_presigned_GET_URL(
         self, object_name: str, expiration: int = 3600
-    ):
+    ) -> str:
         """
         Generate a presigned GET URL to the S3 bucket
         """
@@ -106,10 +104,14 @@ class S3Handler:
                 )
             except Exception as e:
                 raise Exception(
-                    f"Failed to generate presigned GET URL for {object_name} | {str(e)}"
-                )
+                    f"Failed to generate presigned GET URL for {object_name}"
+                ) from e
 
         return url
+
+    class GeneratePresignedPOSTURLResponseModel(BaseModel):
+        url: str
+        fields: dict
 
     async def generate_presigned_POST_URL(
         self,
@@ -117,9 +119,12 @@ class S3Handler:
         fields: dict = None,
         conditions: list = None,
         expiration: int = 3600,
-    ):
+    ) -> GeneratePresignedPOSTURLResponseModel:
         """
-        Generate a presigned POST URL to the S3 bucket
+        Generate a presigned POST URL response to the S3 bucket
+
+        Returns:
+          - response: consists of "url" and "fields" for submitting a post request.
         """
 
         async with self.session.client("s3") as s3:
@@ -133,7 +138,7 @@ class S3Handler:
                 )
             except Exception as e:
                 raise Exception(
-                    f"Failed to generated presigned POST URL for {object_name} | {str(e)}"
-                )
+                    f"Failed to generated presigned POST URL for {object_name}"
+                ) from e
 
         return response
