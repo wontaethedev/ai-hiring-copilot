@@ -119,8 +119,6 @@ class S3Handler:
     async def generate_presigned_POST_URL(
         self,
         object_name: str,
-        fields: dict = None,
-        conditions: list = None,
         expiration: int = 3600,
     ) -> GeneratePresignedPOSTURLResponseModel:
         """
@@ -135,8 +133,6 @@ class S3Handler:
                 response = await s3.generate_presigned_post(
                     self.s3_bucket_name,
                     object_name,
-                    Fields=fields,
-                    Conditions=conditions,
                     ExpiresIn=expiration,
                 )
             except Exception as e:
