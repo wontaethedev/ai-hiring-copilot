@@ -1,6 +1,5 @@
 import aioboto3
 import asyncio
-from multidict import MultiDict
 from fastapi import File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
