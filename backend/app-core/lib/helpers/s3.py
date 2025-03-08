@@ -24,7 +24,7 @@ class S3Handler:
                 region_name=aws_region_name,
             )
         except Exception as e:
-            raise Exception(f"Failed to create AWS S3 session | {str(e)}")
+            raise Exception("Failed to create AWS S3 session") from e
 
     async def upload_file(
         self, file: UploadFile = File(...), s3_path: str = Form(...)
@@ -79,10 +79,10 @@ class S3Handler:
                     Bucket=self.s3_bucket_name, Key=object_key
                 )
             except Exception as e:
-                raise Exception(f"File not found in S3: {str(e)}")
+                raise Exception("File not found in S3") from e
 
         async def iterfile():
-            while chunk := await s3_object["Body"].read(chunk_size):
+            while chunk := await s3_object.get("Body").read(chunk_size):
                 yield chunk
 
         return StreamingResponse(iterfile(), media_type="application/octet-stream")
