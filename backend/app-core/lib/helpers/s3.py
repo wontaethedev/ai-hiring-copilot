@@ -81,8 +81,12 @@ class S3Handler:
             except Exception as e:
                 raise Exception("File not found in S3") from e
 
+        body = s3_object.get("Body", None)
+        if body is None:
+            raise Exception("S3 object does not contain 'Body' field")
+
         async def iterfile():
-            while chunk := await s3_object.get("Body").read(chunk_size):
+            while chunk := await body.read(chunk_size):
                 yield chunk
 
         return StreamingResponse(iterfile(), media_type="application/octet-stream")
