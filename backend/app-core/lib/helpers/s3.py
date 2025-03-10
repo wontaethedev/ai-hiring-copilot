@@ -1,8 +1,25 @@
 import aioboto3
 import asyncio
-from fastapi import File, Form, UploadFile
+from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from lib.helpers.ulid import generate_ulid
+
+
+class UploadFileResult(BaseModel):
+    file: UploadFile
+    s3_object_key: str
+
+
+class UploadResult(BaseModel):
+    s3_object_key: str
+    file: UploadFile  # The original file object
+    success: bool
+
+
+class GeneratePresignedPOSTURLResponseModel(BaseModel):
+    url: str
+    fields: dict
 
 
 class S3Handler:
@@ -27,23 +44,33 @@ class S3Handler:
             raise Exception("Failed to create AWS S3 session") from e
 
     async def upload_file(
-        self, file: UploadFile = File(...), s3_path: str = Form(...)
-    ) -> None:
+        self,
+        organization_id: str,
+        file: UploadFile,
+    ) -> UploadFileResult:
         """
         Upload a file to the S3 bucket
         """
 
-        object_key = f"{s3_path}/{file.filename}"
+        ulid = generate_ulid()
+
+        s3_object_key = f"resume/{organization_id}/{ulid}"
 
         async with self.session.client("s3") as s3:
             try:
-                await s3.upload_fileobj(file.file, self.s3_bucket_name, object_key)
+                await s3.upload_fileobj(file.file, self.s3_bucket_name, s3_object_key)
             except Exception as e:
                 raise Exception(
                     f"Failed to upload the file {file.filename} to S3 bucket"
                 ) from e
 
-    async def batch_upload_files(self, files: list[UploadFile], s3_path: str) -> list:
+        return UploadFileResult(file=file, s3_object_key=s3_object_key)
+
+    async def batch_upload_files(  # TODO
+        self,
+        organization_id: str,
+        files: list[UploadFile],
+    ) -> list[UploadResult]:
         """
         Upload a batch of files to the S3 bucket concurrently
 
@@ -51,7 +78,10 @@ class S3Handler:
           - failed_files: a list of files failed to upload
         """
 
-        tasks = [self.upload_file(file, s3_path) for file in files]
+        tasks = [
+            self.upload_file(organization_id=organization_id, file=file)
+            for file in files
+        ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         failed_files = []
@@ -59,7 +89,7 @@ class S3Handler:
             if isinstance(result, Exception):
                 failed_files.append(file.filename)
 
-        return failed_files
+        return list[UploadResult]
 
     async def download_file(
         self,
@@ -112,10 +142,6 @@ class S3Handler:
 
         return url
 
-    class GeneratePresignedPOSTURLResponseModel(BaseModel):
-        url: str
-        fields: dict
-
     async def generate_presigned_POST_URL(
         self,
         object_name: str,
@@ -140,4 +166,11 @@ class S3Handler:
                     f"Failed to generated presigned POST URL for {object_name}"
                 ) from e
 
-        return response
+            url = response.get("url")
+            fields = response.get("fields")
+            if url is None or fields is None:
+                raise Exception(
+                    "S3 generate presigned post does not contain all expected fields"
+                )
+
+        return GeneratePresignedPOSTURLResponseModel(url=url, fields=fields)
