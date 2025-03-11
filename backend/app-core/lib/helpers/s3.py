@@ -12,7 +12,7 @@ class UploadFileResult(BaseModel):
 
 
 class UploadResult(BaseModel):
-    s3_object_key: str
+    s3_object_key: str | None
     file: UploadFile  # The original file object
     success: bool
 
@@ -75,7 +75,7 @@ class S3Handler:
         Upload a batch of files to the S3 bucket concurrently
 
         Returns:
-          - failed_files: a list of files failed to upload
+          - upload_results: A list of UploadResult showing the result of batch upload
         """
 
         tasks = [
@@ -84,12 +84,26 @@ class S3Handler:
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        failed_files = []
+        upload_results = []
         for file, result in zip(files, results):
             if isinstance(result, Exception):
-                failed_files.append(file.filename)
+                upload_results.append(
+                    UploadResult(s3_object_key=None, file=file, success=False)
+                )
+            elif isinstance(result, UploadFileResult):
+                upload_results.append(
+                    UploadResult(
+                        s3_object_key=result.s3_object_key,
+                        file=file,
+                        success=True,
+                    )
+                )
+            else:
+                raise Exception(
+                    "Unexpected error occurred while returning batch upload results"
+                )
 
-        return list[UploadResult]
+        return upload_results
 
     async def download_file(
         self,
