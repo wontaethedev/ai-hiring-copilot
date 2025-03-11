@@ -1,8 +1,11 @@
+from pydantic import BaseModel
 import aioboto3
 import asyncio
+import io
+
 from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+
 from lib.helpers.ulid import generate_ulid
 
 
@@ -66,7 +69,7 @@ class S3Handler:
 
         return UploadFileResult(file=file, s3_object_key=s3_object_key)
 
-    async def batch_upload_files(  # TODO
+    async def batch_upload_files(
         self,
         organization_id: str,
         files: list[UploadFile],
