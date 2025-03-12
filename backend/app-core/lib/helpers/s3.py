@@ -121,36 +121,6 @@ class S3Handler:
 
         return bytes_io
 
-    async def download_file(
-        self,
-        s3_path: str,
-        filename: str,
-        chunk_size: int = 69 * 1024,
-    ) -> StreamingResponse:
-        """
-        Download a file from the S3 bucket
-        """
-
-        object_key = f"{s3_path}/{filename}"
-
-        async with self.session.client("s3") as s3:
-            try:
-                s3_object = await s3.get_object(
-                    Bucket=self.s3_bucket_name, Key=object_key
-                )
-            except Exception as e:
-                raise Exception("File not found in S3") from e
-
-        body = s3_object.get("Body", None)
-        if body is None:
-            raise Exception("S3 object does not contain 'Body' field")
-
-        async def iterfile():
-            while chunk := await body.read(chunk_size):
-                yield chunk
-
-        return StreamingResponse(iterfile(), media_type="application/octet-stream")
-
     async def generate_presigned_GET_URL(
         self, object_name: str, expiration: int = 3600
     ) -> str:
