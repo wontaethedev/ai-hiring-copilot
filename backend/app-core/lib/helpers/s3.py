@@ -108,6 +108,19 @@ class S3Handler:
 
         return upload_results
 
+    async def download_file(self, s3_object_key: str) -> io.BytesIO:
+        async with self.session.client("s3") as s3:
+            try:
+                bytes_io = io.BytesIO()
+                await s3.download_fileobj(
+                    Bucket=self.s3_bucket_name, Key=s3_object_key, Fileobj=bytes_io
+                )
+                bytes_io.seek(0)
+            except Exception as e:
+                raise Exception("Failed to download a file from S3 bucket") from e
+
+        return bytes_io
+
     async def download_file(
         self,
         s3_path: str,
