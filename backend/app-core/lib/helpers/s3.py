@@ -6,6 +6,7 @@ from fastapi import UploadFile
 from pydantic import BaseModel
 
 from lib.helpers.ulid import generate_ulid
+from lib.models.s3 import UploadResourceType
 
 
 class UploadFileResult(BaseModel):
@@ -47,6 +48,7 @@ class S3Handler:
 
     async def upload_file(
         self,
+        upload_resource_type: UploadResourceType,
         organization_id: str,
         file: UploadFile,
     ) -> UploadFileResult:
@@ -56,7 +58,7 @@ class S3Handler:
 
         ulid = generate_ulid()
 
-        s3_object_key = f"resume/{organization_id}/{ulid}"
+        s3_object_key = f"{upload_resource_type}/{organization_id}/{ulid}"
 
         async with self.session.client("s3") as s3:
             try:
