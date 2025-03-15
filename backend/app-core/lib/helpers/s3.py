@@ -1,9 +1,9 @@
-from pydantic import BaseModel
-import aioboto3
-import asyncio
 import io
+import asyncio
 
+import aioboto3
 from fastapi import UploadFile
+from pydantic import BaseModel
 
 from lib.helpers.ulid import generate_ulid
 
