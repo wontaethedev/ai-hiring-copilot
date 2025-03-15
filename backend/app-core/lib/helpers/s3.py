@@ -4,7 +4,6 @@ import asyncio
 import io
 
 from fastapi import UploadFile
-from fastapi.responses import StreamingResponse
 
 from lib.helpers.ulid import generate_ulid
 
