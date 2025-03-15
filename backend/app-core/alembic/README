@@ -1,1 +1,7 @@
 Generic single-database configuration.
+
+### Generating a new migration file
+
+docker compose exec app-core alembic revision --autogenerate -m "{operation_description}"
+
+ie: operation_name_in_snake_case = create table test | edit column ...
