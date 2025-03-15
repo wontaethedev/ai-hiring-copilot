@@ -122,7 +122,7 @@ class S3Handler:
         return bytes_io
 
     async def generate_presigned_GET_URL(
-        self, object_name: str, expiration: int = 3600
+        self, s3_object_key: str, expiration: int = 3600
     ) -> str:
         """
         Generate a presigned GET URL to the S3 bucket
@@ -132,19 +132,19 @@ class S3Handler:
             try:
                 url = await s3.generate_presigned_url(
                     "get_object",
-                    Params={"Bucket": self.s3_bucket_name, "Key": object_name},
+                    Params={"Bucket": self.s3_bucket_name, "Key": s3_object_key},
                     ExpiresIn=expiration,
                 )
             except Exception as e:
                 raise Exception(
-                    f"Failed to generate presigned GET URL for {object_name}"
+                    f"Failed to generate presigned GET URL for {s3_object_key}"
                 ) from e
 
         return url
 
     async def generate_presigned_POST_URL(
         self,
-        object_name: str,
+        s3_object_key: str,
         expiration: int = 3600,
     ) -> GeneratePresignedPOSTURLResponseModel:
         """
@@ -158,12 +158,12 @@ class S3Handler:
             try:
                 response = await s3.generate_presigned_post(
                     self.s3_bucket_name,
-                    object_name,
+                    s3_object_key,
                     ExpiresIn=expiration,
                 )
             except Exception as e:
                 raise Exception(
-                    f"Failed to generated presigned POST URL for {object_name}"
+                    f"Failed to generated presigned POST URL for {s3_object_key}"
                 ) from e
 
             url = response.get("url")
