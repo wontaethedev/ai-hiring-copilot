@@ -1,19 +1,21 @@
 import React, { ReactNode } from "react";
 
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/in-house/sidebar/app-sidebar";
+
 interface AppWrapperProps {
   children?: ReactNode;
 }
 
 const AppWrapper: React.FC<AppWrapperProps> = () => {
   return (
-    <div className="app-wrapper">
-      <header>
+    <SidebarProvider>
+      <AppSidebar />
+      <div className="app-content">
+        <SidebarTrigger />
         <h1 className="text-blue-500">AI Hiring Copilot</h1>
-      </header>
-      <footer>
-        <p>AI Hiring Copilot</p>
-      </footer>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 

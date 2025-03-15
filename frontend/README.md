@@ -11,7 +11,9 @@
 
 - React
 - TypeScript
-- Sass
+- Tailwind
+- Shadcn
 
 - Vite
 - ESLint
+- Prettier
